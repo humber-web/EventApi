@@ -32,3 +32,4 @@ build/
 ### VS Code ###
 .vscode/
 jwt-secret.key
+generate_jwt_secret.py
