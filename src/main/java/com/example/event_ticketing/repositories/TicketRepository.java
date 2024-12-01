@@ -9,5 +9,7 @@ import com.example.event_ticketing.models.Ticket;
 public interface TicketRepository extends JpaRepository<Ticket, Long> {
     List<Ticket> findByBuyerId(Long buyerId);
     List<Ticket> findByEventId(Long eventId);
+    List<Ticket> findByEventIdAndStatus(Long eventId, Ticket.TicketStatus status);
+
 
 }

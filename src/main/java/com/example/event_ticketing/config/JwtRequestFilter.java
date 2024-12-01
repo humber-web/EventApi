@@ -1,7 +1,6 @@
 package com.example.event_ticketing.config;
 
 import com.example.event_ticketing.utils.JwtUtil;
-import io.jsonwebtoken.Jwts;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -36,21 +35,23 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         try {
             if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
                 token = authorizationHeader.substring(7);
+
+                // Use JwtUtil methods to extract email and role
                 email = jwtUtil.extractEmail(token);
-                role = (String) Jwts.parserBuilder()
-                        .setSigningKey(jwtUtil.getSecretKey())
-                        .build()
-                        .parseClaimsJws(token)
-                        .getBody()
-                        .get("role");
+                role = jwtUtil.extractRole(token);
             }
 
             if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 if (jwtUtil.validateToken(token)) {
-                    SimpleGrantedAuthority authority = new SimpleGrantedAuthority(role);
-                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(email, null,
-                            Collections.singletonList(authority));
+
+                    // Prefix role with "ROLE_" as Spring Security expects
+                    SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + role);
+
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                            email, null, Collections.singletonList(authority));
+
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 } else {
                     throw new RuntimeException("Invalid JWT token");

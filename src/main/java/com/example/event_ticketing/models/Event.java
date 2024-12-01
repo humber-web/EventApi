@@ -1,26 +1,36 @@
 package com.example.event_ticketing.models;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.FutureOrPresent;
+import jakarta.validation.constraints.NotBlank;
+import java.util.List;
+
 import java.time.LocalDateTime;
 
 @Entity
 public class Event {
 
-    @Id
+   @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotBlank(message = "Event name is required")
     private String name;
 
     private String description;
 
+    @NotBlank(message = "Location is required")
     private String location;
 
+    @FutureOrPresent(message = "Event date must be in the future")
     private LocalDateTime dateTime;
 
     @ManyToOne
     @JoinColumn(name = "organizer_id")
     private User organizer;
+
+    @OneToMany(mappedBy = "event", cascade = CascadeType.ALL)
+    private List<Ticket> tickets;
 
     // Getters and Setters
     public Long getId() {

@@ -4,8 +4,11 @@ import com.example.event_ticketing.models.User;
 import com.example.event_ticketing.repositories.UserRepository;
 import com.example.event_ticketing.utils.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Collections;
 
 @RestController
 @RequestMapping("/auth")
@@ -32,15 +35,17 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public String login(@RequestBody User user) {
+    public ResponseEntity<?> login(@RequestBody User user) {
         User existingUser = userRepository.findByEmail(user.getEmail())
-            .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
         if (!passwordEncoder.matches(user.getPassword(), existingUser.getPassword())) {
-            throw new RuntimeException("Invalid credentials");
+            return ResponseEntity.status(401).body(Collections.singletonMap("error", "Invalid credentials"));
         }
 
         // Generate JWT
-        return jwtUtil.generateToken(existingUser.getEmail(), existingUser.getRole().name());
+        String token = jwtUtil.generateToken(existingUser.getEmail(), existingUser.getRole().name());
+
+        return ResponseEntity.ok(Collections.singletonMap("token", token));
     }
 }

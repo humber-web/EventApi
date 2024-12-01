@@ -2,36 +2,37 @@ package com.example.event_ticketing.utils;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import jakarta.annotation.PostConstruct;
 import java.util.Base64;
 import java.util.Date;
 
 @Component
 public class JwtUtil {
 
-    private final SecretKey SECRET_KEY;
-    private final int EXPIRATION_TIME = 3600000; // 1 hour in milliseconds
-    private static final String KEY_FILE = "jwt-secret.key";
+    private static final Logger logger = LoggerFactory.getLogger(JwtUtil.class);
 
-    public JwtUtil() throws IOException {
-        Path keyPath = Paths.get(KEY_FILE);
+    private SecretKey secretKey;
 
-        if (Files.exists(keyPath)) {
-            // Load existing key
-            String secretKey = Files.readString(keyPath).trim();
-            this.SECRET_KEY = Keys.hmacShaKeyFor(Base64.getDecoder().decode(secretKey));
-        } else {
-            // Generate and save a new key
-            this.SECRET_KEY = Keys.secretKeyFor(SignatureAlgorithm.HS512);
-            String encodedKey = Base64.getEncoder().encodeToString(this.SECRET_KEY.getEncoded());
-            Files.write(keyPath, encodedKey.getBytes());
+    @Value("${jwt.secret}")
+    private String secretKeyString;
+
+    @Value("${jwt.expirationMs}")
+    private int expirationTime;
+
+    @PostConstruct
+    public void init() {
+        if (secretKeyString == null || secretKeyString.isEmpty()) {
+            throw new IllegalStateException(
+                    "JWT secret key is not set. Please configure 'jwt.secret' in application.properties or as an environment variable.");
         }
+        byte[] keyBytes = Base64.getDecoder().decode(secretKeyString);
+        this.secretKey = Keys.hmacShaKeyFor(keyBytes);
     }
 
     public String generateToken(String email, String role) {
@@ -39,31 +40,44 @@ public class JwtUtil {
                 .setSubject(email)
                 .claim("role", role)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
-                .signWith(SECRET_KEY, SignatureAlgorithm.HS512)
+                .setExpiration(new Date(System.currentTimeMillis() + expirationTime))
+                .signWith(secretKey, SignatureAlgorithm.HS512)
                 .compact();
     }
 
-    public String extractEmail(String token) {
+    private Claims extractAllClaims(String token) {
         return Jwts.parserBuilder()
-                .setSigningKey(SECRET_KEY)
+                .setSigningKey(secretKey) // Use secretKey instead of SECRET_KEY
                 .build()
                 .parseClaimsJws(token)
-                .getBody()
-                .getSubject();
+                .getBody();
+    }
+
+    public String extractEmail(String token) {
+        try {
+            return extractAllClaims(token).getSubject();
+        } catch (JwtException | IllegalArgumentException e) {
+            logger.error("Failed to extract email from token: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    public String extractRole(String token) {
+        try {
+            return extractAllClaims(token).get("role", String.class);
+        } catch (JwtException | IllegalArgumentException e) {
+            logger.error("Failed to extract role from token: {}", e.getMessage());
+            return null;
+        }
     }
 
     public boolean validateToken(String token) {
         try {
-            Jwts.parserBuilder().setSigningKey(SECRET_KEY).build().parseClaimsJws(token);
+            Jwts.parserBuilder().setSigningKey(secretKey).build().parseClaimsJws(token); // Use secretKey
             return true;
         } catch (JwtException | IllegalArgumentException e) {
+            logger.error("Invalid JWT token: {}", e.getMessage());
             return false;
         }
     }
-
-    public SecretKey getSecretKey() {
-        return SECRET_KEY;
-    }
-    
 }
