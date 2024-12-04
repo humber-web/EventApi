@@ -41,7 +41,7 @@ public class EventController {
     }
 
     // Update an event (Organizers only)
-    @PreAuthorize("hasRole('ORGANIZER')")
+    @PreAuthorize("hasRole('ROLE_ORGANIZER') or hasRole('ROLE_ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<Event> updateEvent(@PathVariable Long id, @Valid @RequestBody Event updatedEvent, Authentication authentication) {
         String userEmail = authentication.getName();
@@ -50,7 +50,7 @@ public class EventController {
     }
 
     // Delete an event (Organizers only)
-    @PreAuthorize("hasRole('ORGANIZER')")
+    @PreAuthorize("hasRole('ROLE_ORGANIZER') or hasRole('ROLE_ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteEvent(@PathVariable Long id, Authentication authentication) {
         String userEmail = authentication.getName();

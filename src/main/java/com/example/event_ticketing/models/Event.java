@@ -32,6 +32,17 @@ public class Event {
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL)
     private List<Ticket> tickets;
 
+    // Constructors
+    public Event() {}
+
+    public Event(String name, String description, LocalDateTime dateTime, String location, User organizer) {
+        this.name = name;
+        this.description = description;
+        this.dateTime = dateTime;
+        this.location = location;
+        this.organizer = organizer;
+    }
+
     // Getters and Setters
     public Long getId() {
         return id;

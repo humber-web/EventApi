@@ -1,8 +1,12 @@
 package com.example.event_ticketing.auth;
 
+import com.example.event_ticketing.exceptions.EmailAlreadyExistsException;
 import com.example.event_ticketing.models.User;
 import com.example.event_ticketing.repositories.UserRepository;
 import com.example.event_ticketing.utils.JwtUtil;
+
+import jakarta.validation.Valid;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -24,14 +28,15 @@ public class AuthController {
     private JwtUtil jwtUtil;
 
     @PostMapping("/register")
-    public User register(@RequestBody User user) {
+    public ResponseEntity<?> register(@Valid @RequestBody User user) {
         // Check if the email already exists
         if (userRepository.findByEmail(user.getEmail()).isPresent()) {
-            throw new RuntimeException("Email already in use");
+            throw new EmailAlreadyExistsException("Email already in use");
         }
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        return userRepository.save(user);
+        User savedUser = userRepository.save(user);
+        return ResponseEntity.ok(savedUser);
     }
 
     @PostMapping("/login")

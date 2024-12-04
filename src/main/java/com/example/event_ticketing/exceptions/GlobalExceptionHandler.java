@@ -48,17 +48,39 @@ public class GlobalExceptionHandler {
                 .body(Collections.singletonMap("error", ex.getMessage()));
     }
 
+    // Handle NotEnoughTicketsException
+    @ExceptionHandler(NotEnoughTicketsException.class)
+    public ResponseEntity<?> handleNotEnoughTicketsException(NotEnoughTicketsException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Collections.singletonMap("error", ex.getMessage()));
+    }
+
+    // Handle TicketAlreadyValidatedException
+    @ExceptionHandler(TicketAlreadyValidatedException.class)
+    public ResponseEntity<?> handleTicketAlreadyValidatedException(TicketAlreadyValidatedException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Collections.singletonMap("error", ex.getMessage()));
+    }
+
     // Handle Validation Errors
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<?> handleValidationExceptions(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
         ex.getBindingResult().getAllErrors()
-          .forEach((error) -> {
-              String fieldName = ((FieldError) error).getField();
-              String errorMessage = error.getDefaultMessage();
-              errors.put(fieldName, errorMessage);
-          });
+                .forEach((error) -> {
+                    String fieldName = ((FieldError) error).getField();
+                    String errorMessage = error.getDefaultMessage();
+                    errors.put(fieldName, errorMessage);
+                });
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
+    }
+
+    // Handle EmailAlreadyExistsException
+    @ExceptionHandler(EmailAlreadyExistsException.class)
+    public ResponseEntity<?> handleEmailAlreadyExistsException(EmailAlreadyExistsException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
     // Handle All Other Exceptions

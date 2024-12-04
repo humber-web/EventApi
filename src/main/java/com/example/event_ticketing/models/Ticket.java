@@ -1,9 +1,7 @@
 package com.example.event_ticketing.models;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.PositiveOrZero;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.*;
 
 @Entity
 public class Ticket {
@@ -22,11 +20,7 @@ public class Ticket {
     @Enumerated(EnumType.STRING)
     private TicketStatus status = TicketStatus.AVAILABLE;
 
-    public enum TicketStatus {
-        AVAILABLE, SOLD
-    }
-
-    // For QR code data (if needed in future)
+    @Column(unique = true)
     private String qrCodeData;
 
     @ManyToOne
@@ -34,8 +28,27 @@ public class Ticket {
     private Event event;
 
     @ManyToOne
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "buyer_id")
     private User buyer;
+
+    // Constructors
+    public Ticket() {}
+
+    public Ticket(String type, Double price, Event event, TicketStatus status, String qrCodeData, User buyer) {
+        this.type = type;
+        this.price = price;
+        this.event = event;
+        this.status = status;
+        this.qrCodeData = qrCodeData;
+        this.buyer = buyer;
+    }
+
+    // Enum for Ticket Status
+    public enum TicketStatus {
+        AVAILABLE,
+        SOLD,
+        VALIDATED
+    }
 
     // Getters and Setters
     public Long getId() {
@@ -62,22 +75,6 @@ public class Ticket {
         this.price = price;
     }
 
-    public Event getEvent() {
-        return event;
-    }
-
-    public void setEvent(Event event) {
-        this.event = event;
-    }
-
-    public User getBuyer() {
-        return buyer;
-    }
-
-    public void setBuyer(User buyer) {
-        this.buyer = buyer;
-    }
-
     public TicketStatus getStatus() {
         return status;
     }
@@ -92,5 +89,21 @@ public class Ticket {
 
     public void setQrCodeData(String qrCodeData) {
         this.qrCodeData = qrCodeData;
+    }
+
+    public Event getEvent() {
+        return event;
+    }
+
+    public void setEvent(Event event) {
+        this.event = event;
+    }
+
+    public User getBuyer() {
+        return buyer;
+    }
+
+    public void setBuyer(User buyer) {
+        this.buyer = buyer;
     }
 }

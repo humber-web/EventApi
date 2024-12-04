@@ -38,6 +38,17 @@ public class User {
     @OneToMany(mappedBy = "buyer", cascade = CascadeType.ALL)
     private List<Ticket> purchasedTickets;
 
+
+    // Constructors
+    public User() {}
+
+    public User(String email, String password, String name, String lastName, Role role) {
+        this.email = email;
+        this.password = password;
+        this.name = name;
+        this.role = role;
+    }
+
     // Getters and Setters
 
     public Long getId() {
