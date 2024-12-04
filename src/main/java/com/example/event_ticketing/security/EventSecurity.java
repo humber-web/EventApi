@@ -20,8 +20,16 @@ public class EventSecurity {
      * @return true if the user is the organizer, false otherwise.
      */
     public boolean isOrganizer(Authentication authentication, Long eventId) {
-        String email = authentication.getName();
         Event event = eventService.getEventById(eventId);
-        return event.getOrganizer().getEmail().equals(email);
+        String userEmail = authentication.getName();
+        boolean isOrganizer = event.getOrganizer().getEmail().equals(userEmail);
+        
+        // Log the result of the check
+        System.out.println("User Email: " + userEmail);
+        System.out.println("Organizer Email: " + event.getOrganizer().getEmail());
+        System.out.println("Is Organizer: " + isOrganizer);
+        
+        return isOrganizer;
     }
+    
 }
