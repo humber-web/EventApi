@@ -1,6 +1,7 @@
 version: '3.8'
+
 services:
-  postgres:
+  postgres-db:
     image: postgres:15
     container_name: postgres-db
     environment:
@@ -11,6 +12,8 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
 
   pgadmin:
     image: dpage/pgadmin4:8.12
@@ -21,7 +24,29 @@ services:
     ports:
       - "5050:80"
     depends_on:
-      - postgres
+      - postgres-db
+    networks:
+      - app-network
+
+  app:
+    build: .
+    container_name: spring_boot_app
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env  # Reference the .env file
+    depends_on:
+      - postgres-db
+    networks:
+      - app-network
+    volumes:
+      - ./images:/app/images
+      - ./qr-codes:/app/qr-codes
+      - ./wait-for-it.sh:/app/wait-for-it.sh
+
+networks:
+  app-network:
+    driver: bridge
 
 volumes:
   postgres_data:

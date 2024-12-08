@@ -1,5 +1,7 @@
 package com.example.event_ticketing.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 
@@ -31,8 +33,19 @@ public class Ticket {
     @JoinColumn(name = "buyer_id")
     private User buyer;
 
+    @ManyToOne
+    @JoinColumn(name = "validator_id")
+    @JsonIgnore
+    private User validator;
+
+    @Column(name = "qr_code_image")
+    @Lob
+    private byte[] qrCodeImage; 
+
     // Constructors
-    public Ticket() {}
+    public Ticket() {
+    }
+
 
     public Ticket(String type, Double price, Event event, TicketStatus status, String qrCodeData, User buyer) {
         this.type = type;
@@ -105,5 +118,21 @@ public class Ticket {
 
     public void setBuyer(User buyer) {
         this.buyer = buyer;
+    }
+
+    public User getValidator() {
+        return validator;
+    }
+
+    public void setValidator(User validator) {
+        this.validator = validator;
+    }
+
+    public byte[] getQrCodeImage() {
+        return qrCodeImage;
+    }
+
+    public void setQrCodeImage(byte[] qrCodeImage) {
+        this.qrCodeImage = qrCodeImage;
     }
 }

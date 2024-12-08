@@ -4,7 +4,10 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "users")
@@ -29,7 +32,10 @@ public class User {
     private Role role;
 
     public enum Role {
-        ATTENDEE, ORGANIZER
+        ATTENDEE,
+        ORGANIZER,
+        ADMIN,
+        VALIDATOR
     }
 
     @OneToMany(mappedBy = "organizer", cascade = CascadeType.ALL)
@@ -37,6 +43,15 @@ public class User {
 
     @OneToMany(mappedBy = "buyer", cascade = CascadeType.ALL)
     private List<Ticket> purchasedTickets;
+
+    @OneToMany(mappedBy = "validator", cascade = CascadeType.ALL)
+    private List<Ticket> validatedTickets;
+
+
+    @ManyToMany(mappedBy = "validators")
+    private Set<Event> eventsToValidate = new HashSet<>();
+
+    
 
 
     // Constructors
@@ -89,6 +104,14 @@ public class User {
 
     public void setRole(Role role) {
         this.role = role;
+    }
+
+    public Set<Event> getEventsToValidate() {
+        return eventsToValidate;
+    }
+
+    public void setEventsToValidate(Set<Event> eventsToValidate) {
+        this.eventsToValidate = eventsToValidate;
     }
 
 }

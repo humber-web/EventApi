@@ -33,3 +33,6 @@ build/
 .vscode/
 jwt-secret.key
 generate_jwt_secret.py
+
+# Env
+.env

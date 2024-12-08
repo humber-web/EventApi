@@ -3,14 +3,19 @@ package com.example.event_ticketing.models;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;
+
+import java.util.HashSet;
 import java.util.List;
 
 import java.time.LocalDateTime;
+import java.util.Set;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 public class Event {
 
-   @Id
+    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
@@ -32,8 +37,16 @@ public class Event {
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL)
     private List<Ticket> tickets;
 
+    @ManyToMany
+    @JoinTable(name = "event_validators", joinColumns = @JoinColumn(name = "event_id"), inverseJoinColumns = @JoinColumn(name = "validator_id"))
+    @JsonIgnore
+    private Set<User> validators = new HashSet<>();
+
+    private Double price;
+
     // Constructors
-    public Event() {}
+    public Event() {
+    }
 
     public Event(String name, String description, LocalDateTime dateTime, String location, User organizer) {
         this.name = name;
@@ -90,5 +103,24 @@ public class Event {
 
     public void setOrganizer(User organizer) {
         this.organizer = organizer;
+    }
+
+    public long getTicketsOfType(String type) {
+        return tickets.stream()
+                .filter(ticket -> ticket.getType().equals(type))
+                .count();
+    }
+
+    // Method to get the price for a ticket type
+    public Double getTicketPrice(String type) {
+        // Here you could have different prices for different ticket types
+        return this.price; // For simplicity, returning base price
+    }
+    public Set<User> getValidators() {
+        return validators;
+    }
+
+    public void setValidators(Set<User> validators) {
+        this.validators = validators;
     }
 }

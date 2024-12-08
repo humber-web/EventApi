@@ -1,6 +1,8 @@
 package com.example.event_ticketing.controllers;
 
+import java.io.IOException;
 import com.example.event_ticketing.dto.TicketCreationRequest;
+import com.example.event_ticketing.models.User;
 import com.example.event_ticketing.dto.TicketPurchaseRequest;
 import com.example.event_ticketing.models.Event;
 import com.example.event_ticketing.models.Ticket;
@@ -9,15 +11,26 @@ import com.example.event_ticketing.services.EventService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import com.example.event_ticketing.repositories.UserRepository;
+import com.example.event_ticketing.exceptions.TicketAlreadyValidatedException;
+import com.example.event_ticketing.exceptions.TicketNotFoundException;
+import com.google.zxing.WriterException;
+import com.example.event_ticketing.exceptions.UserNotFoundException;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Collections;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/tickets")
 public class TicketController {
+
+    @Autowired
+    private UserRepository userRepository;
 
     @Autowired
     private TicketService ticketService;
@@ -48,14 +61,15 @@ public class TicketController {
     @PostMapping("")
     public ResponseEntity<?> createTickets(
             @Valid @RequestBody TicketCreationRequest ticketRequest,
-            Authentication authentication) {
-
+            Authentication authentication) 
+            throws IOException, WriterException {
+    
         // Check if the authenticated user is the organizer of the event
         ResponseEntity<?> organizerCheckResponse = checkIfOrganizer(authentication, ticketRequest.getEventId());
         if (organizerCheckResponse != null) {
             return organizerCheckResponse;
         }
-
+    
         // Proceed to create tickets
         List<Ticket> createdTickets = ticketService.createTickets(ticketRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdTickets);
@@ -75,9 +89,16 @@ public class TicketController {
     public ResponseEntity<?> purchaseTickets(
             @Valid @RequestBody TicketPurchaseRequest purchaseRequest,
             Authentication authentication) {
+
         String userEmail = authentication.getName();
-        List<Ticket> purchasedTickets = ticketService.purchaseTickets(purchaseRequest, userEmail);
-        return ResponseEntity.ok(purchasedTickets);
+
+        try {
+            Map<String, Object> purchaseResult = ticketService.purchaseTickets(purchaseRequest, userEmail);
+            return ResponseEntity.status(HttpStatus.CREATED).body(purchaseResult);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Collections.singletonMap("error", e.getMessage()));
+        }
     }
 
     /**
@@ -111,22 +132,26 @@ public class TicketController {
      */
     @PostMapping("/{ticketId}/validate")
     public ResponseEntity<?> validateTicket(@PathVariable Long ticketId, Authentication authentication) {
-        // Fetch the ticket details
-        Ticket ticket = ticketService.getTicketById(ticketId);
-
-        // Check if the authenticated user is the organizer of the event associated with the ticket
         String userEmail = authentication.getName();
-        if (!ticket.getEvent().getOrganizer().getEmail().equals(userEmail)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Collections.singletonMap("error", "Access Denied: You are not the organizer of this event"));
+
+        // Check if the user has VALIDATOR or ADMIN role
+        ResponseEntity<?> roleCheckResponse = checkIfValidatorOrAdmin(authentication);
+        if (roleCheckResponse != null) {
+            return roleCheckResponse;
         }
 
-        // Proceed to validate the ticket
-        ticketService.validateTicket(ticketId);
-        return ResponseEntity.ok(Collections.singletonMap("message", "Ticket validated successfully"));
+        // Fetch the user performing the validation
+        User validator = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new UserNotFoundException("User not found with email: " + userEmail));
+
+        // Call the service method with ticketId and validatorId
+        Ticket validatedTicket = ticketService.validateTicket(ticketId, validator.getId());
+
+        return ResponseEntity.ok(validatedTicket);
     }
 
-    // Helper method to check if the authenticated user is the organizer of the event
+    // Helper method to check if the authenticated user is the organizer of the
+    // event
     private ResponseEntity<?> checkIfOrganizer(Authentication authentication, Long eventId) {
         // Fetch the event details
         Event event = eventService.getEventById(eventId);
@@ -139,5 +164,25 @@ public class TicketController {
         }
 
         return null;
+    }
+
+    private ResponseEntity<?> checkIfValidatorOrAdmin(Authentication authentication) {
+        // Fetch the user details
+        User user = userRepository.findByEmail(authentication.getName())
+                .orElse(null);
+
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Collections.singletonMap("error", "User is not authenticated"));
+        }
+
+        // Check for VALIDATOR or ADMIN roles
+        if (user.getRole() != User.Role.VALIDATOR && user.getRole() != User.Role.ADMIN) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Collections.singletonMap("error",
+                            "Access Denied: You do not have permission to validate tickets"));
+        }
+
+        return null; // User has proper role; proceed with operation
     }
 }

@@ -1,43 +1,23 @@
 package com.example.event_ticketing.dto;
 
-import jakarta.validation.constraints.*;
+import java.util.List;
 
 public class TicketPurchaseRequest {
-
-    @NotNull(message = "Event ID is required")
     private Long eventId;
+    private List<TicketPurchaseDetail> purchases;
 
-    @NotBlank(message = "Ticket type is required")
-    private String type;
-
-    @NotNull(message = "Quantity is required")
-    @Positive(message = "Quantity must be positive")
-    private Integer quantity;
-
-    // Getters and Setters
-
+    // Getters and setters
     public Long getEventId() {
         return eventId;
     }
-
     public void setEventId(Long eventId) {
         this.eventId = eventId;
     }
 
-    public String getType() {
-        return type;
+    public List<TicketPurchaseDetail> getPurchases() {
+        return purchases;
     }
-
-    public void setType(String type) {
-        this.type = type;
+    public void setPurchases(List<TicketPurchaseDetail> purchases) {
+        this.purchases = purchases;
     }
-    
-    public Integer getQuantity() {
-        return quantity;
-    }
-
-    public void setQuantity(Integer quantity) {
-        this.quantity = quantity;
-    }
-
 }

@@ -75,6 +75,13 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
     }
 
+    // Handle InvalidTicketStatusException
+    @ExceptionHandler(InvalidTicketStatusException.class)
+    public ResponseEntity<?> handleInvalidTicketStatusException(InvalidTicketStatusException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Collections.singletonMap("error", ex.getMessage()));
+    }
+
     // Handle EmailAlreadyExistsException
     @ExceptionHandler(EmailAlreadyExistsException.class)
     public ResponseEntity<?> handleEmailAlreadyExistsException(EmailAlreadyExistsException ex) {

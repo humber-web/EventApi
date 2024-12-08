@@ -9,6 +9,7 @@ import com.example.event_ticketing.exceptions.EventAccessDeniedException;
 import com.example.event_ticketing.exceptions.UserNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Service
@@ -78,5 +79,39 @@ public class EventService {
         eventRepository.delete(existingEvent);
     }
 
-    // Additional methods as needed...
+    // Assign a validator to an event
+    @Transactional
+    public void assignValidatorToEvent(Long eventId, Long validatorId, String organizerEmail) {
+        // Fetch the event
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new EventNotFoundException("Event not found with ID: " + eventId));
+
+        // Fetch the organizer
+        User organizer = userRepository.findByEmail(organizerEmail)
+                .orElseThrow(() -> new UserNotFoundException("Organizer not found with email: " + organizerEmail));
+
+        // Validate that the user is the organizer of the event or has ADMIN role
+        if (!event.getOrganizer().getId().equals(organizer.getId()) && 
+            organizer.getRole() != User.Role.ADMIN) {
+            throw new IllegalArgumentException("Access Denied: You are not the organizer or an admin");
+        }
+
+        // Fetch the validator
+        User validator = userRepository.findById(validatorId)
+                .orElseThrow(() -> new UserNotFoundException("Validator not found with ID: " + validatorId));
+
+        // Check if the user has the VALIDATOR role
+        if (validator.getRole() != User.Role.VALIDATOR) {
+            throw new IllegalArgumentException("User does not have the VALIDATOR role");
+        }
+
+        // Assign validator to the event
+        if (!event.getValidators().contains(validator)) {
+            event.getValidators().add(validator);
+            eventRepository.save(event);
+        } else {
+            throw new IllegalArgumentException("Validator is already assigned to this event");
+        }
+    }
+
 }

@@ -1,6 +1,6 @@
 package com.example.event_ticketing.config;
 
-import com.example.event_ticketing.config.JwtRequestFilter; // Ensure correct package
+import com.example.event_ticketing.config.JwtRequestFilter;
 import com.example.event_ticketing.security.EventSecurity;
 import com.example.event_ticketing.security.TicketSecurity;
 import jakarta.servlet.http.HttpServletResponse;
@@ -18,6 +18,11 @@ import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.cors.CorsConfigurationSource;
+
+import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
@@ -55,9 +60,26 @@ public class SecurityConfig {
         };
     }
 
+    // Define CorsConfigurationSource bean
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3003")); // Frontend URL
+        configuration.setAllowedMethods(Arrays.asList("GET","POST","PUT","DELETE","OPTIONS"));
+        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
+        
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.csrf(csrf -> csrf.disable())
+            .cors() // Enable CORS
+            .and()
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/auth/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/events/**").permitAll()
@@ -68,7 +90,7 @@ public class SecurityConfig {
                 .requestMatchers("/tickets/event/**").hasRole("ORGANIZER")
                 .requestMatchers("/tickets/purchase").hasAnyRole("ATTENDEE", "ORGANIZER", "ADMIN")
                 .requestMatchers("/tickets/my-tickets").authenticated()
-                .requestMatchers("/tickets/*/validate").hasRole("ORGANIZER")
+                .requestMatchers("/tickets/*/validate").hasAnyRole("ORGANIZER","VALIDATOR")
                 .anyRequest().authenticated()
             )
             .exceptionHandling(exception -> exception

@@ -1,0 +1,12 @@
+# Ignore build directories
+build/
+out/
+# Ignore Maven/Gradle wrapper files
+.mvn/
+.gradle/
+# Ignore IDE-specific files
+.idea/
+*.iml
+# Other exclusions
+*.md
+*.log
