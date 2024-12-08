@@ -36,3 +36,6 @@ generate_jwt_secret.py
 
 # Env
 .env
+
+# Images 
+images/qr-codes/
